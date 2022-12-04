@@ -8,9 +8,19 @@ from tqdm import tqdm
 
 from task import train, inference, validate
 
+try:
+    from apex.parallel import DistributedDataParallel
+    from apex.fp16_utils import *
+    from apex import amp, optimizers
+    from apex.multi_tensor_apply import multi_tensor_applier
+except ImportError:
+    raise ImportError("Please install APEX from https://www.github.com/nvidia/apex to run this example.")
+
+
 
 def main(args):
     pass
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Vision Transformer')
@@ -42,9 +52,13 @@ if __name__ == '__main__':
     parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                         help='use pre-trained model')
 
+    # Arguments for APEX.
     parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', 0), type=int)
-    parser.add_argument('--sync_bn', action='store_true',
-                        help='enabling apex sync BN.')
+    parser.add_argument('--sync_bn', action='store_true')
+    parser.add_argument('--opt-level', type=str)
+    parser.add_argument('--keep-batchnorm-fp32', type=str, default=None)
+    parser.add_argument('--loss-scale', type=str, default=None)
+    parser.add_argument('--channels-last', type=bool, default=False)
     args = parser.parse_args()
 
     main(args)
