@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+import os
 import argparse
 from tqdm import tqdm
 
@@ -24,12 +25,12 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch Vision Transformer')
-    parser.add_argument('task', choices=['train', 'validate', 'inference']
+    parser.add_argument('task', choices=['train', 'validate', 'inference'],
                         help='task that model to do')
 
     parser.add_argument('dataset',
                         help='path to dataset')
-    parser.add_argument('-a', '--arch', default='B_16'
+    parser.add_argument('-a', '--arch', default='B_16',
                         help='model architecture (default: B_16)')
 
     parser.add_argument('-e', '--epochs', default=1000, type=int,
