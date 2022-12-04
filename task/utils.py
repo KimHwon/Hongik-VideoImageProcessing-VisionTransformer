@@ -8,7 +8,7 @@ def get_logger(name=None, path=None):
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger = logging.Logger(name)
+    logger = logging.getLogger(name)
     
     stream = logging.StreamHandler()
     stream.setFormatter(

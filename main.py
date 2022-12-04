@@ -8,6 +8,9 @@ import argparse
 from tqdm import tqdm
 
 from task import train, inference, validate
+from task import get_logger
+
+_logger = get_logger(__name__)
 
 try:
     from apex.parallel import DistributedDataParallel
@@ -15,9 +18,8 @@ try:
     from apex import amp, optimizers
     from apex.multi_tensor_apply import multi_tensor_applier
 except ImportError:
-    raise ImportError("Please install APEX from https://www.github.com/nvidia/apex to run this example.")
-
-
+    _logger.exception("Please install APEX from https://www.github.com/nvidia/apex to run this example.")
+    exit(1)
 
 def main(args):
     pass
