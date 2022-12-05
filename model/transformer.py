@@ -19,16 +19,6 @@ class MultiHeadAttention(nn.Module):
         self.qkv_proj = nn.Linear(input_dim, 3*embed_dim)
         self.o_proj = nn.Linear(embed_dim, embed_dim)
 
-        #self.reset_parameters()
-
-    def reset_parameters(self):
-        #xavier init
-        nn.init.xavier_uniform_(self.qkv_proj.weight)
-        self.qkv_proj.bias.data.fill_(0)
-
-        nn.init.xavier_uniform_(self.o_proj.weight)
-        self.o_proj.bias.data.fill_(0)
-
     def scaled_dot_product(self, q, k, v, mask=None):
         d_k = q.size()[-1]
         attn_logits = torch.matmul(q, k.transpose(-2, -1))
