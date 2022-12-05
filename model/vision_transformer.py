@@ -50,10 +50,10 @@ class ClassificationHead(nn.Module):
     """
     ClassificationHead
     """
-    def __init__(self, emb_size=768, n_classes=10):
+    def __init__(self, emb_size, n_classes):
         super().__init__()
 
-        self.norm = nn.LayerNorm(emb_size),
+        self.norm = nn.LayerNorm(emb_size)
         self.fc = nn.Linear(emb_size, n_classes)
     
     def forward(self, x):
@@ -67,19 +67,19 @@ class VisionTransformer(nn.Sequential):
     """
     def __init__(
             self,
-            img_size: int = 224,
-            patch_size: int = 16,
+            image_size: int = 224,
             in_channels: int = 3,
-            n_classes: int = 1000,
-            emb_size: int = 768,
-            mlp_size: int = 3072,
+            patch_size: int = 16,
             num_heads: int = 12,
-            depth: int = 12,
-            dropout_rate: float = 0.1
+            num_layers: int = 12,
+            embed_size: int = 768,
+            mlp_size: int = 3072,
+            dropout_rate: float = 0.1,
+            num_classes: int = 1000
         ):
         super().__init__(
-            Embedding(img_size, patch_size, in_channels, emb_size),
-            Transformer(depth, emb_size, num_heads, mlp_size, dropout_rate),
-            ClassificationHead(emb_size, n_classes)
+            Embedding(image_size, patch_size, in_channels, embed_size),
+            Transformer(num_layers, embed_size, num_heads, mlp_size, dropout_rate),
+            ClassificationHead(embed_size, num_classes)
         )
        

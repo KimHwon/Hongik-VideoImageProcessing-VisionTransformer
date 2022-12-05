@@ -1,3 +1,3 @@
 
 from .vision_transformer import VisionTransformer
-from .configs import *
+from .configs import select_configs

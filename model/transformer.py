@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 import math
 
@@ -19,16 +20,6 @@ class MultiHeadAttention(nn.Module):
         self.qkv_proj = nn.Linear(input_dim, 3*embed_dim)
         self.o_proj = nn.Linear(embed_dim, embed_dim)
 
-        #self.reset_parameters()
-
-    def reset_parameters(self):
-        #xavier init
-        nn.init.xavier_uniform_(self.qkv_proj.weight)
-        self.qkv_proj.bias.data.fill_(0)
-
-        nn.init.xavier_uniform_(self.o_proj.weight)
-        self.o_proj.bias.data.fill_(0)
-
     def scaled_dot_product(self, q, k, v, mask=None):
         d_k = q.size()[-1]
         attn_logits = torch.matmul(q, k.transpose(-2, -1))
@@ -37,7 +28,7 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             attn_logits = attn_logits.masked_fill(mask == 0, -1e10)
 
-        attention = torch.nn.functional.softmax(attn_logits, dim=-1)
+        attention = F.softmax(attn_logits, dim=-1)
         
         values = torch.matmul(attention, v)
         return values, attention
