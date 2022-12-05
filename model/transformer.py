@@ -1,5 +1,7 @@
+import math
 import numpy as np
 from torch import nn
+import torch
 
 class MultiheadAttention(nn.Module):
     def __init__(self, input_dim, embed_dim, num_head):
@@ -92,11 +94,11 @@ class EncoderBlock(nn.Sequential):
         super.__init__(
             ResidualAdd(nn.Sequential(
                 nn.LayerNorm(dim),
-                MultiHeadAttention(dim, dim, num_heads),
+                MultiheadAttention(dim, dim, num_heads),
                 nn.Dropout(dropout)
             )),
             ResidualAdd((
-                nn.LayerNorm(emb_size),
+                nn.LayerNorm(dim),
                 MLP(dim),
                 nn.Dropout(dropout)
             ))
@@ -104,5 +106,5 @@ class EncoderBlock(nn.Sequential):
 
 class Transformer(nn.Sequential):
     def __init__(self, depth : int = 12):
-        super.__init__(*[EncoderBlock(**kwargs) for _ in range(depth)])
+        super.__init__(*[EncoderBlock for _ in range(depth)])
         
