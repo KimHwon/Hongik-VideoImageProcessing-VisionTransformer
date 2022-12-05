@@ -7,6 +7,7 @@ import os
 import argparse
 from tqdm import tqdm
 
+from model import VisionTransformer as ViT
 from task import train, inference, validate
 from task import get_logger
 
@@ -22,7 +23,34 @@ except ImportError:
     exit(1)
 
 def main(args):
-    pass
+    # Print configurations.
+    for k, v in vars(args).items():
+        _logger.info(f" {k:<25} : {v}")
+
+    cudnn.benchmark = True
+    args.distributed = False
+    if 'WORLD_SIZE' in os.environ:
+        args.distributed = int(os.environ['WORLD_SIZE']) > 1
+    
+    if args.distributed:
+        args.gpu = args.local_rank
+        torch.cuda.set_device(args.gpu)
+        torch.distributed.init_process_group(backend='nccl', init_method='env://')
+        args.world_size = torch.distributed.get_world_size()
+    assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
+
+    if args.channels_last:
+        memory_format = torch.channels_last
+    else:
+        memory_format = torch.contiguous_format
+    
+    _logger.info(f"Using model '{args.arch}' (pretrained={args.pretrained})")
+    model = ViT(args.arch, pretrained=args.pretrained, image_size=args.image_size)
+
+    if args.sync_bn:
+        import apex
+        _logger.info("using apex synced BN")
+        model = apex.parallel.convert_syncbn_model(model)
 
 
 if __name__ == '__main__':
