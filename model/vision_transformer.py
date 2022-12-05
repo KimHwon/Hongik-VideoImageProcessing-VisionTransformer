@@ -50,7 +50,7 @@ class ClassificationHead(nn.Module):
     """
     ClassificationHead
     """
-    def __init__(self, emb_size=768, n_classes=10):
+    def __init__(self, emb_size, n_classes):
         super().__init__()
 
         self.norm = nn.LayerNorm(emb_size),

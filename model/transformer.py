@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 import math
 
@@ -27,7 +28,7 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             attn_logits = attn_logits.masked_fill(mask == 0, -1e10)
 
-        attention = torch.nn.functional.softmax(attn_logits, dim=-1)
+        attention = F.softmax(attn_logits, dim=-1)
         
         values = torch.matmul(attention, v)
         return values, attention
