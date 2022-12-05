@@ -1,22 +1,25 @@
-import math
-import numpy as np
-from torch import nn
 import torch
+from torch import nn
 
-class MultiheadAttention(nn.Module):
-    def __init__(self, input_dim, embed_dim, num_head):
+import math
+
+
+class MultiHeadAttention(nn.Module):
+    """
+    MultiHeadAttention
+    """
+    def __init__(self, input_dim, embed_dim, num_heads):
         super().__init__()
 
         self.embed_dim = embed_dim
-        self.num_head = num_head
-        self.head_dim = embed_dim // num_head
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
 
         # stack weight 
         self.qkv_proj = nn.Linear(input_dim, 3*embed_dim)
         self.o_proj = nn.Linear(embed_dim, embed_dim)
 
-        self.reset_parameters()
-
+        #self.reset_parameters()
 
     def reset_parameters(self):
         #xavier init
@@ -39,7 +42,6 @@ class MultiheadAttention(nn.Module):
         values = torch.matmul(attention, v)
         return values, attention
 
-
     def forward(self, x, mask=None, return_attention=False):
         batch_size, seq_length, _ = x.size()
         qkv = self.qkv_proj(x)
@@ -60,26 +62,23 @@ class MultiheadAttention(nn.Module):
         else:
             return output
 
-class MLP(nn.Module):
-    def __init__(self, emb_size: int, expansion: int = 4, drop_rate: float = 0.):
-        super().__init__()
-
-        self.feedforward = nn.Sequential(
-            nn.Linear(emb_size, expansion * emb_size),
+class MLP(nn.Sequential):
+    """
+    MLP
+    """
+    def __init__(self, emb_dim, ff_dim):
+        super().__init__(
+            nn.Linear(emb_dim, ff_dim),
             nn.GELU(),
-            nn.Dropout(drop_rate),
-            nn.Linear(expansion * emb_size, emb_size),
-            nn.Dropout(drop_rate)
-         )
-        
-    def forword(self,x):
-      return self.feedforward(x)
-
-
+            nn.Linear(ff_dim, emb_dim)
+        )
 
 class ResidualAdd(nn.Module):
+    """
+    ResidualAdd
+    """
     def __init__(self, fn):
-        super.__init__()
+        super().__init__()
         self.fn = fn
 
     def forward(self, x):
@@ -88,23 +87,30 @@ class ResidualAdd(nn.Module):
         x += res
         return x
 
-
 class EncoderBlock(nn.Sequential):
-    def __init__(self, dim, num_heads, ff_dim, dropout, **kwargs):
-        super.__init__(
+    """
+    EncoderBlock
+    """
+    def __init__(self, dim, num_heads, ff_dim, dropout):
+        super().__init__(
             ResidualAdd(nn.Sequential(
                 nn.LayerNorm(dim),
-                MultiheadAttention(dim, dim, num_heads),
+                MultiHeadAttention(dim, dim, num_heads),
                 nn.Dropout(dropout)
             )),
-            ResidualAdd((
+            ResidualAdd(nn.Sequential(
                 nn.LayerNorm(dim),
-                MLP(dim),
+                MLP(dim, ff_dim),
                 nn.Dropout(dropout)
             ))
         )
 
 class Transformer(nn.Sequential):
-    def __init__(self, depth : int = 12):
-        super.__init__(*[EncoderBlock for _ in range(depth)])
+    """
+    Transformer
+    """
+    def __init__(self, depth, dim, num_heads, ff_dim, dropout):
+        super().__init__(*[
+            EncoderBlock(dim, num_heads, ff_dim, dropout) for _ in range(depth)
+        ])
         
