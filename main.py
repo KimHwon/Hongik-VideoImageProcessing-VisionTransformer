@@ -3,18 +3,93 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+import os
 import argparse
 from tqdm import tqdm
 
+from model import VisionTransformer as ViT
 from task import train, inference, validate
-from task import load_checkpoint
+from task import get_logger
 
+_logger = get_logger(__name__)
+
+try:
+    from apex.parallel import DistributedDataParallel
+    from apex.fp16_utils import *
+    from apex import amp, optimizers
+    from apex.multi_tensor_apply import multi_tensor_applier
+except ImportError:
+    _logger.exception("Please install APEX from https://www.github.com/nvidia/apex to run this example.")
+    exit(1)
 
 def main(args):
-    pass
+    # Print configurations.
+    for k, v in vars(args).items():
+        _logger.info(f" {k:<25} : {v}")
+
+    cudnn.benchmark = True
+    args.distributed = False
+    if 'WORLD_SIZE' in os.environ:
+        args.distributed = int(os.environ['WORLD_SIZE']) > 1
+    
+    if args.distributed:
+        args.gpu = args.local_rank
+        torch.cuda.set_device(args.gpu)
+        torch.distributed.init_process_group(backend='nccl', init_method='env://')
+        args.world_size = torch.distributed.get_world_size()
+    assert torch.backends.cudnn.enabled, "Amp requires cudnn backend to be enabled."
+
+    if args.channels_last:
+        memory_format = torch.channels_last
+    else:
+        memory_format = torch.contiguous_format
+    
+    _logger.info(f"Using model '{args.arch}' (pretrained={args.pretrained})")
+    model = ViT(args.arch, pretrained=args.pretrained, image_size=args.image_size)
+
+    if args.sync_bn:
+        import apex
+        _logger.info("using apex synced BN")
+        model = apex.parallel.convert_syncbn_model(model)
+
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='PyTorch Vision Transformer')
+    parser.add_argument('task', choices=['train', 'validate', 'inference'],
+                        help='task that model to do')
+
+    parser.add_argument('dataset',
+                        help='path to dataset')
+    parser.add_argument('-a', '--arch', default='B_16',
+                        help='model architecture (default: B_16)')
+
+    parser.add_argument('-e', '--epochs', default=1000, type=int,
+                        help='number of total epochs to run (default: 1000)')
+    parser.add_argument('-b', '--batch-size', default=1024, type=int,
+                        help='mini-batch size per process (default: 1024)')
+    parser.add_argument('-j', '--workers', default=4, type=int,
+                        help='number of data loading workers (default: 4)')
+    parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+                        help='Initial learning rate.')
+    parser.add_argument('--momentum', default=0.9, type=float,
+                        help='momentum (default: 0.9)')
+    parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+                        help='weight decay (default: 1e-4)')
+    parser.add_argument('--image_size', default=224, type=int,
+                        help='image size (default: 224)')
+
+    parser.add_argument('--resume', default='', type=str,
+                        help='path to latest checkpoint (default: none)')
+    parser.add_argument('--pretrained', dest='pretrained', action='store_true',
+                        help='use pre-trained model')
+
+    # Arguments for APEX.
+    parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', 0), type=int)
+    parser.add_argument('--sync_bn', action='store_true')
+    parser.add_argument('--opt-level', type=str)
+    parser.add_argument('--keep-batchnorm-fp32', type=str, default=None)
+    parser.add_argument('--loss-scale', type=str, default=None)
+    parser.add_argument('--channels-last', type=bool, default=False)
     args = parser.parse_args()
 
     main(args)
