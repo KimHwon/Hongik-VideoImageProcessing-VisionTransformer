@@ -20,7 +20,7 @@ def train(train_sampler, train_loader, validate_loader, model, criterion, optimi
 
         train_one_epoch(train_loader, model, criterion, optimizer, epoch, amp, args)
 
-        loss, prec1, prec5 = validate(validate_loader, model, criterion)
+        loss, prec1, prec5 = validate(validate_loader, model, criterion, args)
         _logger.info(f"-==| Loss: {loss} | Prec@1: {prec1} | Prec@5: {prec5} |==-")
 
         if args.local_rank == 0:
