@@ -15,6 +15,10 @@ def validate(loader, model, criterion, args):
     prec1_metric = AverageMeter('Prec@1')
     prec5_metric = AverageMeter('Prec@5')
     progress = ProgressMeter(f"Validate : ", len(loader), [loss_metric, prec1_metric, prec5_metric])
+    if args.debug:
+        memory_metric = AverageMeter('Mem')
+        max_memory_metric = AverageMeter('MemMax')
+        progress = ProgressMeter(f"Validate : ", len(loader), [loss_metric, prec1_metric, prec5_metric, memory_metric, max_memory_metric])
 
     model.eval()
     loader = DataPreloader(loader)
@@ -38,10 +42,16 @@ def validate(loader, model, criterion, args):
         loss_metric.update(to_python_float(reduced_loss), input.size(0))
         prec1_metric.update(to_python_float(prec1), input.size(0))
         prec5_metric.update(to_python_float(prec5), input.size(0))
+        if args.debug:
+            memory_metric.update(torch.cuda.memory_allocated() / (1024 * 1024))
+            max_memory_metric.update(torch.cuda.max_memory_allocated() / (1024 * 1024))
         progress.update(1)
 
-        if args.local_rank == 0 and idx % 10 == 0:
+        if args.debug:
             _logger.info(str(progress))
+        else:
+            if args.local_rank == 0 and idx % 10 == 0:
+                _logger.info(str(progress))
 
     return (
         loss_metric.get_average(),

@@ -229,6 +229,8 @@ if __name__ == '__main__':
                         help='path to latest checkpoint (default: none)')
     parser.add_argument('--pretrained', dest='pretrained', action='store_true',
                         help='use pre-trained model')
+    parser.add_argument('--debug', action='store_true',
+                        help='debug memory usages.')
 
     # Arguments for APEX.
     parser.add_argument("--local_rank", default=os.getenv('LOCAL_RANK', 0), type=int)
