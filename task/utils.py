@@ -45,7 +45,7 @@ class AverageMeter(object):
     
     def update(self, value, step=1):
         self.last = value
-        self.sum += value
+        self.sum += value * step
         self.cnt += step
 
     def get_average(self):
